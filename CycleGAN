@@ -72,7 +72,7 @@ batch_size <- 100
 latent_size <- 100
 patch<-(128/2**4)
 disc_patch<-c(patch,patch,1)
-# Adam parameters suggested in https://arxiv.org/abs/1511.06434
+
 adam_lr <- 0.00005 
 adam_beta_1 <- 0.5
 img_shape<-c(3,128,128)
