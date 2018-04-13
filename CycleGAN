@@ -305,7 +305,7 @@ for(epoch in 1:epochs){
     imga
   )
   fakea <- predict(
-    generatorab,    
+    generatorba,    
     imgb
   )
   reconsta <- predict(
