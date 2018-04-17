@@ -1,7 +1,6 @@
 library(keras)
 library(progress)
 library(abind)
-# k_set_image_data_format('channels_first')
 
 # Functions ---------------------------------------------------------------
 img_shape<-c(128,128,3)
@@ -93,7 +92,7 @@ epochs <- 50
 
 patch<-(128/2**4)
 disc_patch<-c(patch,patch,1)
-adam_lr <- 0.00005 
+adam_lr <- 0.0002 
 adam_beta_1 <- 0.5
 img_shape<-c(128,128,3)
 
@@ -129,16 +128,13 @@ discriminatora %>% compile(
   optimizer = optimizer_adam(lr = adam_lr, beta_1 = adam_beta_1),
   loss = list("mean_squared_error"),metrics='accuracy'
 )
-
 discriminatorb <- build_discriminator()
 discriminatorb %>% compile(
   optimizer = optimizer_adam(lr = adam_lr, beta_1 = adam_beta_1),
   loss = list("mean_squared_error"),metrics='accuracy'
 )
-
 freeze_weights(discriminatora)
 freeze_weights(discriminatorb)
-
 valida<-discriminatora(fakea)
 validb<-discriminatorb(fakeb)
 
@@ -159,8 +155,11 @@ combined %>% compile(
 library(imager)
 library("EBImage")
 j<-1
+dataset<-"apple2orange"
+dataset<-"horse2zebra"
+## you should download image data 
 # Training ----------------------------------------------------------------
-setwd("E:\\gyeongtaek\\kerasr\\\edges2shoes\\train")
+setwd(paste0("E:\\gyeongtaek\\kerasr\\",dataset,"\\",dataset,"\\trainA"))
 traina<-list()
 file_list<-list.files()
 for(j in 1:length(file_list)){
@@ -174,39 +173,70 @@ require(abind)
 trainA <- abind(traina,along=0)
 dim(trainA) <-c(dim(trainA)[1],128,128,3)
 
-setwd("E:\\gyeongtaek\\kerasr\\apple2orange\\apple2orange\\trainb")
+setwd(paste0("E:\\gyeongtaek\\kerasr\\",dataset,"\\",dataset,"\\trainB"))
 trainb<-list()
 file_list<-list.files()
+K<-1
 for(j in 1:length(file_list)){
   da<-load.image(file_list[j])
   da2<-da[,,1,]
+  if(is.na(dim(da2)[3])){
+    next;
+  }
+  
   da3<-resize(da2,128,128)
 
   trainb[[j]]<-da3
+  K<-j+1
 }
 
 require(abind)
-trainB <- abind(trainb,along=0)
+trainB <- abind(trainb[-309],along=0)
 dim(trainB) <-c(dim(trainB)[1],128,128,3)
 dim(trainB)
 
 trainA<-(trainA - 0.5)/0.5
 trainB<-(trainB - 0.5)/0.5
 
-dim(da3)
-dim(da3)
-head(da)
-min(trainA[1,,,])
-max(trainA[1,,,])
 
-dim(da2)
-# setwd("E:\\gyeongtaek\\kerasr\\apple2orange\\apple2orange\\trainB")
+# TEST data ----------------------------------------------------------------
+setwd(paste0("E:\\gyeongtaek\\kerasr\\",dataset,"\\",dataset,"\\testA"))
+testa<-list()
+file_list<-list.files()
+for(j in 1:length(file_list)){
+  da<-load.image(file_list[j])
+  da2<-da[,,1,]
+  da3<-resize(da2,128,128)
+  testa[[j]]<-da3
+}
+
+require(abind)
+testA <- abind(testa,along=0)
+dim(testA) <-c(dim(testA)[1],128,128,3)
+
+setwd(paste0("E:\\gyeongtaek\\kerasr\\",dataset,"\\",dataset,"\\testB"))
+testb<-list()
+file_list<-list.files()
+for(j in 1:length(file_list)){
+  da<-load.image(file_list[j])
+  da2<-da[,,1,]
+  da3<-resize(da2,128,128)
+  
+  testb[[j]]<-da3
+}
+testB <- abind(testb,along=0)
+dim(testB) <-c(dim(testB)[1],128,128,3)
+
+
+
+testA<-(testA - 0.5)/0.5
+testB<-(testB - 0.5)/0.5
 
 daloss <- NULL
 dbloss <- NULL
 dloss<-NULL
 g_loss<-NULL
-for(epoch in 1:epochs){
+for(epoch in 1:200){
   
   num_batches <- 100
   pb <- progress_bar$new(
@@ -218,34 +248,34 @@ for(epoch in 1:epochs){
  
   
 
-  batch_size <-32
+  batch_size <-20
   for(index in 1:num_batches){
     
     pb$tick()
     
     sama<-sample(1:dim(trainA)[1],batch_size)
     samb<-sample(1:dim(trainB)[1],batch_size)
-    imga<-trainA[sama,,,]
-    imgb<-trainB[samb,,,]
-    dim(imga)
-    fake_B <- predict(generatorab,imga)
-    fake_A <- predict(generatorba,imgb)
+    imgsa<-trainA[sama,,,]
+    imgsb<-trainB[samb,,,]
+    dim(imgsa)
+    fakeb <- predict(generatorab,imgsa)
+    fakea <- predict(generatorba,imgsb)
     
-    valid<-array(1,dim=c(disc_patch,32))  
-    fake<-array(0,dim=c(disc_patch,32))
+    valid<-array(1,dim=c(disc_patch,batch_size))  
+    fake<-array(0,dim=c(disc_patch,batch_size))
     
-    ak<-predict(discriminatora,imga)
+    ak<-predict(discriminatora,imgsa)
 
     dim(valid)<-dim(ak)
     dim(fake)<-dim(ak)
    
     # dim(imga)
     da_loss_real <- train_on_batch(
-      discriminatora, x = imga, 
+      discriminatora, x = imgsa, 
       y =valid
     )
     da_loss_fake <- train_on_batch(
-      discriminatora, x = fake_A, 
+      discriminatora, x = fakea, 
       y =fake
     )
 
@@ -254,11 +284,11 @@ for(epoch in 1:epochs){
       
       
     db_loss_real <- train_on_batch(
-      discriminatorb, x = imgb, 
+      discriminatorb, x = imgsb, 
       y =valid
     )
     db_loss_fake <- train_on_batch(
-      discriminatorb, x = fake_B, 
+      discriminatorb, x = fakeb, 
       y =fake
     )
     
@@ -266,24 +296,19 @@ for(epoch in 1:epochs){
                             mean(unlist(db_loss_real))) )
       
       
-    dloss<-c(dloss,0.5*(daloss+dbloss))
+    dloss<-c(dloss,0.5*(0.5*(mean(unlist(da_loss_fake))+
+                               mean(unlist(da_loss_real))) +0.5*(mean(unlist(db_loss_fake))+
+                                                                   mean(unlist(db_loss_real)))))
     
-    # sama<-sample(1:dim(trainA)[1],batch_size)
-    # samb<-sample(1:dim(trainB)[1],batch_size)
-    imga<-trainA[sama,,,]
-    imgb<-trainB[samb,,,]
-    
-    
-    
-    # valid<-array(1,dim=c(disc_patch,32))  
-    # fake<-array(0,dim=c(disc_patch,32))
-      
-  
-    # (valida,validb,fakeb,fakea,recona,reconb))
+    sama<-sample(1:dim(trainA)[1],batch_size)
+    samb<-sample(1:dim(trainB)[1],batch_size)
+    imgsa<-trainA[sama,,,]
+    imgsb<-trainB[samb,,,]
+
     g_loss0 <- train_on_batch(
       combined, 
-      list(imga, imgb),
-      list(valid, valid,imga,imgb,imga,imgb)
+      list(imgsa, imgsb),
+      list(valid, valid,imgsb,imgsa,imgsa,imgsb)
     )
     
     g_loss<-rbind(g_loss,unlist(g_loss0))
@@ -292,47 +317,48 @@ for(epoch in 1:epochs){
   
   cat(sprintf("\nTesting for epoch %02d:", epoch))
   
-  # Evaluate the testing loss here
+  
   sama<-sample(1:dim(trainA)[1],5)
   samb<-sample(1:dim(trainB)[1],5)
-  imga<-trainA[sama,,,]
-  imgb<-trainB[samb,,,]
+  testimga<-trainA[sama,,,]
+  testimgb<-trainB[samb,,,]
   
+
   
   # Get a batch to display
-  fakeb <- predict(
+  testfakeb <- predict(
     generatorab,    
-    imga
+    testimga
   )
-  fakea <- predict(
+  testfakea <- predict(
     generatorba,    
-    imgb
+    testimgb
   )
-  reconsta <- predict(
+  testreconsta <- predict(
     generatorba,    
-    fakeb
+    testfakeb
   )
-  reconstb <- predict(
+  testreconstb <- predict(
     generatorab,    
-    fakea
+    testfakea
   )
   
   
-  dim(fakea)<-c(5,128,128,3)
-  dim(fakeb)<-c(5,128,128,3)
-  dim(reconsta)<-c(5,128,128,3)
-  dim(reconstb)<-c(5,128,128,3)
-  k<-2
+  dim(testfakea)<-c(5,128,128,3)
+  dim(testfakeb)<-c(5,128,128,3)
+  dim(testreconsta)<-c(5,128,128,3)
+  dim(testreconstb)<-c(5,128,128,3)
+  k<-4
   for(k in 1:5){
-  oria<-imga[k,,,]
-  orib<-imgb[k,,,]
+  oria<-testimga[k,,,]
+  orib<-testimgb[k,,,]
   dim(oria)<-c(128,128,3)
   dim(orib)<-c(128,128,3)
     
-  dg<-fakea[k,,,]
-  dg2<-fakeb[k,,,]
-  dg3<-reconsta[k,,,]
-  dg4<-reconstb[k,,,]
+  dg<-testfakea[k,,,]
+  dg2<-testfakeb[k,,,]
+  dg3<-testreconsta[k,,,]
+  dg4<-testreconstb[k,,,]
   
   min(oria)
   max(oria)
@@ -357,5 +383,3 @@ round(((orib+1)/2),4) %>% as.raster() %>%
   }
   
 }
-
-
