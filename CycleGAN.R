@@ -8,12 +8,9 @@ main_input<-imgb
 build_generator <- function(){
   
   gf<-32
-   
-
   
    
    main_input <- layer_input(shape = img_shape, name = 'main_input')
-
    d1<-main_input %>% layer_conv_2d(filters=gf,kernel_size= c(4,4),strides = c(2,2), padding = "same") %>%
      layer_activation_leaky_relu(0.2)
    d2<-  layer_conv_2d(d1,gf*2, c(4,4),strides = c(2,2), padding = "same")%>%
@@ -27,62 +24,67 @@ build_generator <- function(){
    d4 <- layer_conv_2d(d3,gf*8, c(4,4),strides = c(2,2), padding = "same") %>%
      layer_activation_leaky_relu(0.2) %>%
    layer_batch_normalization(momentum = 0.8)
+   
+   d5 <- layer_conv_2d(d4,gf*8, c(4,4),strides = c(2,2), padding = "same") %>%
+     layer_activation_leaky_relu(0.2) %>%
+     layer_batch_normalization(momentum = 0.8)
+   
+   d6 <- layer_conv_2d(d5,gf*8, c(4,4),strides = c(2,2), padding = "same") %>%
+     layer_activation_leaky_relu(0.2) %>%
+     layer_batch_normalization(momentum = 0.8)
+   
+   d7 <- layer_conv_2d(d6,gf*8, c(4,4),strides = c(2,2), padding = "same") %>%
+     layer_activation_leaky_relu(0.2) %>%
+     layer_batch_normalization(momentum = 0.8)
+   
+   
 
 
-   u1 <- d4 %>% layer_upsampling_2d(size = c(2, 2)) %>%
+   u1 <- d7 %>% layer_upsampling_2d(size = c(2, 2)) %>%
      layer_conv_2d(gf*4, c(4,4),strides = c(1,1), padding = "same", activation = "relu")%>%
      layer_batch_normalization(momentum = 0.8) %>% 
      layer_dropout(0.25) 
-      u1<-layer_concatenate(c(u1,d3))
+      u1<-layer_concatenate(c(u1,d6))
 
     u2 <- u1 %>% layer_upsampling_2d(size = c(2, 2)) %>%
      layer_conv_2d(gf*2, c(4,4),strides = c(1,1), padding = "same", activation = "relu")%>%
      layer_batch_normalization(momentum = 0.8) %>%
       layer_dropout(0.25)
-      u2<-layer_concatenate(c(u2,d2))
+      u2<-layer_concatenate(c(u2,d5))
 
      u3 <- u2 %>% layer_upsampling_2d(size = c(2, 2)) %>%
      layer_conv_2d(gf, c(4,4),strides = c(1,1), padding = "same", activation = "relu")%>%
      layer_batch_normalization(momentum = 0.8) %>%
        layer_dropout(0.25)
-     u3<-layer_concatenate(c(u3,d1))
-    u4<-u3 %>% layer_upsampling_2d(size = c(2, 2))
+     u3<-layer_concatenate(c(u3,d4))
+     
+     u4 <- u3 %>% layer_upsampling_2d(size = c(2, 2)) %>%
+       layer_conv_2d(gf, c(4,4),strides = c(1,1), padding = "same", activation = "relu")%>%
+       layer_batch_normalization(momentum = 0.8) %>%
+       layer_dropout(0.25)
+     u4<-layer_concatenate(c(u4,d3))
+     
+     u5 <- u4 %>% layer_upsampling_2d(size = c(2, 2)) %>%
+       layer_conv_2d(gf, c(4,4),strides = c(1,1), padding = "same", activation = "relu")%>%
+       layer_batch_normalization(momentum = 0.8) %>%
+       layer_dropout(0.25)
+     u5<-layer_concatenate(c(u5,d2))
+     
+     u6 <- u5 %>% layer_upsampling_2d(size = c(2, 2)) %>%
+       layer_conv_2d(gf, c(4,4),strides = c(1,1), padding = "same", activation = "relu")%>%
+       layer_batch_normalization(momentum = 0.8) %>%
+       layer_dropout(0.25)
+     u6<-layer_concatenate(c(u6,d1))
+     
+     
+     
+    u7<-u6 %>% layer_upsampling_2d(size = c(2, 2))
 
-    output_img<-u4 %>% layer_conv_2d(3, c(4,4),strides = c(1,1), padding = "same", activation = "tanh")
+    output_img<-u7 %>% layer_conv_2d(3, c(4,4),strides = c(1,1), padding = "same", activation = "tanh")
 
    keras_model(main_input, output_img)
    
 }
-
-build_discriminator <- function(){
-  
-  df<-64
-  
-  
-  main_input <- layer_input(shape = img_shape, name = 'main_input')
-  
-  d1<-main_input %>% layer_conv_2d(df, c(4,4),strides = c(2,2), padding = "same") %>%
-    layer_activation_leaky_relu(0.2) 
-
-  
-  d2<-  layer_conv_2d(d1,df*2, c(4,4),strides = c(2,2), padding = "same")  %>%
-    layer_activation_leaky_relu(0.2) %>% 
-    layer_batch_normalization(momentum = 0.8) 
-  
-  d3<-layer_conv_2d(d2,df*4, c(4,4),strides = c(2,2), padding = "same")  %>%
-    layer_activation_leaky_relu(0.2) %>%
-  layer_batch_normalization(momentum = 0.8)
-  
-  d4 <- layer_conv_2d(d3,df*8, c(4,4),strides = c(2,2), padding = "same")  %>%
-    layer_activation_leaky_relu(0.2) %>%
-  layer_batch_normalization(momentum = 0.8)
-  
-  validiy<- d4 %>% 
-  layer_conv_2d(1, c(4,4),strides = c(1,1), padding = "same")
-  
-  keras_model(main_input, validiy)
-}
-
 
 
 # Parameters --------------------------------------------------------------
@@ -156,7 +158,7 @@ library(imager)
 library("EBImage")
 j<-1
 dataset<-"apple2orange"
-dataset<-"horse2zebra"
+# dataset<-"horse2zebra"
 ## you should download image data 
 # Training ----------------------------------------------------------------
 setwd(paste0("E:\\gyeongtaek\\kerasr\\",dataset,"\\",dataset,"\\trainA"))
