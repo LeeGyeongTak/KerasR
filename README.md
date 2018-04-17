@@ -15,6 +15,8 @@ Paper:https://arxiv.org/abs/1411.1784
 
 [Code](https://github.com/LeeGyeongTak/KerasR/blob/master/CGAN.R)
 
+![cgann](https://user-images.githubusercontent.com/15728592/38848273-3f9c1308-4241-11e8-8a77-04679e29bc7f.jpg)
+![cgan](https://user-images.githubusercontent.com/15728592/38848239-05bedfe4-4241-11e8-8744-90e7aaa964c5.png)
 
 
 # DCGAN
