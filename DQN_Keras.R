@@ -1,4 +1,4 @@
-
+### Deep Q Network Using Keras R
 model <- keras_model_sequential()
 model %>% 
   layer_dense(units = 256, activation = 'relu', input_shape = c(100)) %>% 
