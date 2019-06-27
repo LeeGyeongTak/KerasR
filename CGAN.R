@@ -111,7 +111,7 @@ label<-results[[2]]
 combined <- keras_model(noise, list(valid,label))
 combined %>% compile(
   optimizer = optimizer_adam(lr = adam_lr, beta_1 = adam_beta_1),
-  loss = list("binary_crossentropy",infoloss)
+  loss = list("binary_crossentropy","sparse_categorical_crossentropy")
 )
 
 
