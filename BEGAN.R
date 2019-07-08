@@ -152,12 +152,8 @@ for(epoch in 1:epochs){
     batch <- sample(possible_indexes, size = batch_size)
     possible_indexes <- possible_indexes[!possible_indexes %in% batch]
     image_batch <- mnist$train$x[batch,,,,drop = FALSE]
-    label_batch <- mnist$train$y[batch]
-    
-    
-    sampled_labels <- sample(0:9, batch_size, replace = TRUE) %>%
-      matrix(ncol = 1)
-    
+
+  
     
     generated_images <- predict(generator,noise)
     
